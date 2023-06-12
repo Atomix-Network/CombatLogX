@@ -8,6 +8,7 @@ author: "SirBlobman"
 
 plugin-depend:
   - "Citizens"
+  - "xAtomix"
 
 plugin-soft-depend:
   - "Sentinel"

@@ -128,6 +128,10 @@ public final class CombatNpcManager {
         npc.data().set(Metadata.SHOULD_SAVE, false);
         printDebug("Created NPC with entity type " + entityType + ".");
 
+        String groupName = expansion.getGroupManager().getGroup(player).getName();
+        npc.data().set("GROUP", groupName);
+        printDebug("Assigned the xAtomix group" + groupName + " to the NPC.");
+
         Location location = player.getLocation();
         boolean spawn = npc.spawn(location);
         if (!spawn) {

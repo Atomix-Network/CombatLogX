@@ -1,5 +1,7 @@
 package combatlogx.expansion.compatibility.citizens.listener;
 
+import net.citizensnpcs.api.CitizensAPI;
+import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 
 import org.bukkit.Location;
@@ -25,8 +27,11 @@ import net.citizensnpcs.api.event.NPCDespawnEvent;
 import net.citizensnpcs.api.npc.NPC;
 
 public final class ListenerDeath extends CitizensExpansionListener {
+    private final CitizensExpansion expansion;
+
     public ListenerDeath(@NotNull CitizensExpansion expansion) {
         super(expansion);
+        this.expansion = expansion;
     }
 
     @EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = true)
@@ -60,6 +65,15 @@ public final class ListenerDeath extends CitizensExpansionListener {
         CombatNPC combatNPC = getCombatNPC(npc);
         if (combatNPC == null) {
             printDebug("NPC was not a CombatNPC, ignoring event.");
+            return;
+        }
+
+        if (e.getDamager() instanceof Player &&
+                npc.data().has("GROUP") &&
+                npc.data().get("GROUP").toString().equalsIgnoreCase(
+                    expansion.getGroupManager().getGroup((Player) e.getDamager()).getName())) {
+            printDebug("Damager was in the same xAtomix group, ignoring and canceling event.");
+            e.setCancelled(true);
             return;
         }
 

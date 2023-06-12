@@ -1,5 +1,6 @@
 package combatlogx.expansion.compatibility.citizens;
 
+import combatlogx.expansion.compatibility.citizens.manager.GroupManager;
 import org.jetbrains.annotations.NotNull;
 
 import org.bukkit.Bukkit;
@@ -30,6 +31,7 @@ public final class CitizensExpansion extends Expansion {
     private final SentinelConfiguration sentinelConfiguration;
     private final CombatNpcManager combatNpcManager;
     private final InventoryManager inventoryManager;
+    private final GroupManager groupManager;
 
     public CitizensExpansion(@NotNull ICombatLogX plugin) {
         super(plugin);
@@ -39,6 +41,7 @@ public final class CitizensExpansion extends Expansion {
 
         this.combatNpcManager = new CombatNpcManager(this);
         this.inventoryManager = new InventoryManager(this);
+        this.groupManager = new GroupManager();
     }
 
     @Override
@@ -99,6 +102,9 @@ public final class CitizensExpansion extends Expansion {
 
     public @NotNull InventoryManager getInventoryManager() {
         return this.inventoryManager;
+    }
+    public @NotNull GroupManager getGroupManager() {
+        return this.groupManager;
     }
 
     public boolean isSentinelEnabled() {
