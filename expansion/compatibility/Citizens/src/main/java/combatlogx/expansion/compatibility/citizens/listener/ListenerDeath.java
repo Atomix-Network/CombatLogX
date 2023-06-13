@@ -55,12 +55,6 @@ public final class ListenerDeath extends CitizensExpansionListener {
     public void onDamageNPC(NPCDamageByEntityEvent e) {
         printDebug("Detected NPCDamageByEntityEvent...");
 
-        CitizensConfiguration configuration = getCitizensConfiguration();
-        if (!configuration.isStayUntilNoDamage()) {
-            printDebug("Stay until no damage setting is not enabled, ignoring event.");
-            return;
-        }
-
         NPC npc = e.getNPC();
         CombatNPC combatNPC = getCombatNPC(npc);
         if (combatNPC == null) {
@@ -74,6 +68,12 @@ public final class ListenerDeath extends CitizensExpansionListener {
                     expansion.getGroupManager().getGroup((Player) e.getDamager()).getName())) {
             printDebug("Damager was in the same xAtomix group, ignoring and canceling event.");
             e.setCancelled(true);
+            return;
+        }
+
+        CitizensConfiguration configuration = getCitizensConfiguration();
+        if (!configuration.isStayUntilNoDamage()) {
+            printDebug("Stay until no damage setting is not enabled, ignoring event.");
             return;
         }
 
