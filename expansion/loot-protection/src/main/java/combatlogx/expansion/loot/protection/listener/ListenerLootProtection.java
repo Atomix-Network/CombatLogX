@@ -8,6 +8,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.TimeUnit;
 
+import com.codisimus.plugins.phatloots.events.MobDropLootEvent;
 import org.jetbrains.annotations.NotNull;
 
 import org.bukkit.Bukkit;
@@ -76,7 +77,10 @@ public class ListenerLootProtection extends ExpansionListener {
     @EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = true)
     public void onEntityItemPickup(EntityPickupItemEvent e) {
         Item itemEntity = e.getItem();
+
+        Bukkit.broadcastMessage("§d§l[MM DEBUG] §fItem pickup event: " + itemEntity.getName());
         if (!contains(itemEntity)) {
+            Bukkit.broadcastMessage("§d§l[MM DEBUG] §cWas not protected");
             return;
         }
 
@@ -217,6 +221,7 @@ public class ListenerLootProtection extends ExpansionListener {
 
         List<ItemStack> dropList = e.getDrops();
         for (ItemStack drop : dropList) {
+            Bukkit.broadcastMessage("§e§l[MM DEBUG] §fDropped item: §7" + drop.toString());
             ProtectedItem protectedItem = new ProtectedItem(entityLocation, drop);
             protectedItem.setOwnerUUID(enemyId);
             protectedItemQueue.add(protectedItem);
@@ -233,6 +238,11 @@ public class ListenerLootProtection extends ExpansionListener {
         LanguageManager languageManager = getLanguageManager();
         languageManager.sendMessageWithPrefix(enemy, "expansion.loot-protection.enemy-died",
                 timeReplacer, enemyReplacer);
+    }
+
+    @EventHandler
+    public void onMobDropLootEvent(MobDropLootEvent event) {
+        Bukkit.broadcastMessage("§b§l[MM DEBUG] §fPhatLoots MobDropLootEvent event: §7" + event.getItemList().toString());
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
