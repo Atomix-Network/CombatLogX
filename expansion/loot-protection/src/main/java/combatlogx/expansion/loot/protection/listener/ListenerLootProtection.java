@@ -1,15 +1,25 @@
 package combatlogx.expansion.loot.protection.listener;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
-import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.TimeUnit;
-
-import org.jetbrains.annotations.NotNull;
-
+import com.github.sirblobman.api.configuration.PlayerDataManager;
+import com.github.sirblobman.api.language.LanguageManager;
+import com.github.sirblobman.api.language.replacer.LongReplacer;
+import com.github.sirblobman.api.language.replacer.Replacer;
+import com.github.sirblobman.api.language.replacer.StringReplacer;
+import com.github.sirblobman.api.location.BlockLocation;
+import com.github.sirblobman.combatlogx.api.ICombatLogX;
+import com.github.sirblobman.combatlogx.api.configuration.PunishConfiguration;
+import com.github.sirblobman.combatlogx.api.event.PlayerPunishEvent;
+import com.github.sirblobman.combatlogx.api.event.PlayerUntagEvent;
+import com.github.sirblobman.combatlogx.api.expansion.ExpansionListener;
+import com.github.sirblobman.combatlogx.api.manager.IDeathManager;
+import com.github.sirblobman.combatlogx.api.object.KillTime;
+import com.github.sirblobman.combatlogx.api.object.UntagReason;
+import combatlogx.expansion.loot.protection.LootProtectionExpansion;
+import combatlogx.expansion.loot.protection.configuration.LootProtectionConfiguration;
+import combatlogx.expansion.loot.protection.event.LootProtectEvent;
+import combatlogx.expansion.loot.protection.event.QueryPickupEvent;
+import combatlogx.expansion.loot.protection.object.ProtectedItem;
+import net.jodah.expiringmap.ExpiringMap;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.World;
@@ -29,27 +39,11 @@ import org.bukkit.event.inventory.InventoryPickupItemEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
 import org.bukkit.plugin.PluginManager;
+import org.jetbrains.annotations.NotNull;
 
-import com.github.sirblobman.api.configuration.PlayerDataManager;
-import com.github.sirblobman.api.language.LanguageManager;
-import com.github.sirblobman.api.language.replacer.LongReplacer;
-import com.github.sirblobman.api.language.replacer.Replacer;
-import com.github.sirblobman.api.language.replacer.StringReplacer;
-import com.github.sirblobman.api.location.BlockLocation;
-import com.github.sirblobman.combatlogx.api.ICombatLogX;
-import com.github.sirblobman.combatlogx.api.configuration.PunishConfiguration;
-import com.github.sirblobman.combatlogx.api.event.PlayerPunishEvent;
-import com.github.sirblobman.combatlogx.api.event.PlayerUntagEvent;
-import com.github.sirblobman.combatlogx.api.expansion.ExpansionListener;
-import com.github.sirblobman.combatlogx.api.manager.IDeathManager;
-import com.github.sirblobman.combatlogx.api.object.KillTime;
-import com.github.sirblobman.combatlogx.api.object.UntagReason;
-
-import combatlogx.expansion.loot.protection.LootProtectionExpansion;
-import combatlogx.expansion.loot.protection.configuration.LootProtectionConfiguration;
-import combatlogx.expansion.loot.protection.event.QueryPickupEvent;
-import combatlogx.expansion.loot.protection.object.ProtectedItem;
-import net.jodah.expiringmap.ExpiringMap;
+import java.util.*;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.TimeUnit;
 
 public class ListenerLootProtection extends ExpansionListener {
     private final LootProtectionExpansion expansion;
@@ -176,7 +170,12 @@ public class ListenerLootProtection extends ExpansionListener {
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onDeath(EntityDeathEvent e) {
-        LivingEntity entity = e.getEntity();
+        Bukkit.getPluginManager().callEvent(new LootProtectEvent(e.getEntity(), e.getDrops()));
+    }
+
+    @EventHandler
+    public void onLootProtect(LootProtectEvent event) {
+        LivingEntity entity = event.getEntity();
         ICombatLogX combatLogX = getCombatLogX();
         IDeathManager deathManager = combatLogX.getDeathManager();
 
@@ -189,7 +188,7 @@ public class ListenerLootProtection extends ExpansionListener {
 
         UUID entityId = entity.getUniqueId();
         UUID enemyId = this.enemyMap.get(entityId);
-        if (!checkVoidKill(e) && entity instanceof Player) {
+        if (!checkVoidKill(event.getEntity(), event.getLoot()) && entity instanceof Player) {
             Player player = (Player) entity;
             PlayerDataManager playerDataManager = getPlayerDataManager();
             YamlConfiguration playerData = playerDataManager.get(player);
@@ -202,6 +201,9 @@ public class ListenerLootProtection extends ExpansionListener {
             }
         }
 
+        if (!(entity instanceof Player) && enemyId == null) {
+            enemyId = entity.getKiller().getUniqueId();
+        }
         if (enemyId == null) {
             return;
         }
@@ -215,7 +217,7 @@ public class ListenerLootProtection extends ExpansionListener {
         BlockLocation entityLocation = BlockLocation.from(entity);
         ConcurrentLinkedQueue<ProtectedItem> protectedItemQueue = new ConcurrentLinkedQueue<>();
 
-        List<ItemStack> dropList = e.getDrops();
+        List<ItemStack> dropList = event.getLoot();
         for (ItemStack drop : dropList) {
             ProtectedItem protectedItem = new ProtectedItem(entityLocation, drop);
             protectedItem.setOwnerUUID(enemyId);
@@ -291,8 +293,7 @@ public class ListenerLootProtection extends ExpansionListener {
         return this.protectedItemMap.containsKey(uuid);
     }
 
-    private boolean checkVoidKill(EntityDeathEvent e) {
-        LivingEntity entity = e.getEntity();
+    private boolean checkVoidKill(LivingEntity entity, List<ItemStack> dropList) {
         EntityDamageEvent lastDamageEvent = entity.getLastDamageCause();
         if (lastDamageEvent == null) {
             return false;
@@ -318,7 +319,6 @@ public class ListenerLootProtection extends ExpansionListener {
             Player enemyPlayer = (Player) enemy;
             World enemyWorld = enemy.getWorld();
             Location enemyLocation = enemy.getLocation();
-            List<ItemStack> dropList = e.getDrops();
 
             ItemStack[] dropArray = dropList.toArray(new ItemStack[0]);
             PlayerInventory enemyInventory = enemyPlayer.getInventory();
