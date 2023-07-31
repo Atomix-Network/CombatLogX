@@ -1,4 +1,5 @@
 import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
+import java.net.URI
 
 plugins {
     id("com.github.johnrengelman.shadow") version "8.1.1"
@@ -25,8 +26,15 @@ publishing {
     }
 }
 
+repositories {
+    maven {
+        url = URI("https://mvn.lumine.io/repository/maven-public/")
+    }
+}
+
 dependencies {
     implementation("net.jodah:expiringmap:0.5.10")
+    compileOnly("io.lumine:Mythic-Dist:5.2.1")
 }
 
 tasks {

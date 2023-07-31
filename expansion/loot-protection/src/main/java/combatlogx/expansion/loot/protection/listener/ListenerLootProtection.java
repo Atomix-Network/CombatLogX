@@ -19,6 +19,10 @@ import combatlogx.expansion.loot.protection.configuration.LootProtectionConfigur
 import combatlogx.expansion.loot.protection.event.LootProtectEvent;
 import combatlogx.expansion.loot.protection.event.QueryPickupEvent;
 import combatlogx.expansion.loot.protection.object.ProtectedItem;
+import io.lumine.mythic.api.MythicProvider;
+import io.lumine.mythic.api.mobs.MythicMob;
+import io.lumine.mythic.bukkit.MythicBukkit;
+import io.lumine.mythic.core.mobs.ActiveMob;
 import net.jodah.expiringmap.ExpiringMap;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
@@ -201,7 +205,7 @@ public class ListenerLootProtection extends ExpansionListener {
             }
         }
 
-        if (!(entity instanceof Player) && enemyId == null) {
+        if (!(entity instanceof Player) && entity.getKiller() != null && enemyId == null) {
             enemyId = entity.getKiller().getUniqueId();
         }
         if (enemyId == null) {
@@ -225,6 +229,11 @@ public class ListenerLootProtection extends ExpansionListener {
         }
 
         this.pendingProtectionMap.put(entityLocation, protectedItemQueue);
+        if (!(entity instanceof Player) && Bukkit.getPluginManager().isPluginEnabled("MythicMobs")) {
+            ActiveMob activeMob = MythicBukkit.inst().getMobManager().getMythicMobInstance(entity);
+            if (activeMob == null) return;
+            if (!getConfiguration().getMobWhitelist().contains(activeMob.getType().getInternalName())) return;
+        }
         String entityName = (entity.getCustomName() == null ? entity.getName() : entity.getCustomName());
 
         long timeLeftMillis = this.protectedItemMap.getExpiration();
