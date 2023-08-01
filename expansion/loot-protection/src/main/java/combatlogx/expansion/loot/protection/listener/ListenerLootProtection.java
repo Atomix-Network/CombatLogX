@@ -19,9 +19,8 @@ import combatlogx.expansion.loot.protection.configuration.LootProtectionConfigur
 import combatlogx.expansion.loot.protection.event.LootProtectEvent;
 import combatlogx.expansion.loot.protection.event.QueryPickupEvent;
 import combatlogx.expansion.loot.protection.object.ProtectedItem;
-import io.lumine.mythic.api.MythicProvider;
-import io.lumine.mythic.api.mobs.MythicMob;
 import io.lumine.mythic.bukkit.MythicBukkit;
+import io.lumine.mythic.bukkit.events.MythicMobDeathEvent;
 import io.lumine.mythic.core.mobs.ActiveMob;
 import net.jodah.expiringmap.ExpiringMap;
 import org.bukkit.Bukkit;
@@ -175,6 +174,14 @@ public class ListenerLootProtection extends ExpansionListener {
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onDeath(EntityDeathEvent e) {
         Bukkit.getPluginManager().callEvent(new LootProtectEvent(e.getEntity(), e.getDrops()));
+    }
+
+    @EventHandler
+    public void onMobDrop(MythicMobDeathEvent event) {
+        if (!(event.getEntity() instanceof LivingEntity)) return;
+        if (event.getDrops().isEmpty()) return;
+
+        Bukkit.getPluginManager().callEvent(new LootProtectEvent((LivingEntity) event.getEntity(), event.getDrops()));
     }
 
     @EventHandler
